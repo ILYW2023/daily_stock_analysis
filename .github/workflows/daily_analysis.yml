@@ -1,9 +1,11 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
+  # 定时触发 - 多个时间点分组推送
   schedule:
-    - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
+    - cron: '0 10 * * 1-5'     # 北京时间 18:00 - 第1组股票
+    - cron: '15 10 * * 1-5'    # 北京时间 18:15 - 第2组股票
+    - cron: '30 10 * * 1-5'    # 北京时间 18:30 - 第3组股票（可选）
   
   # 手动触发
   workflow_dispatch:
@@ -15,6 +17,9 @@ on:
         type: choice
         options:
           - full          # 完整分析（股票+大盘）
+          - group1        # 仅第1组股票
+          - group2        # 仅第2组股票
+          - group3        # 仅第3组股票
           - market-only   # 仅大盘复盘
           - stocks-only   # 仅股票分析
       force_run:
@@ -251,6 +256,69 @@ jobs:
             FORCE_RUN_ARG="--force-run"
             echo "⚡ 已启用强制运行模式（跳过交易日检查）"
           fi
+
+          # 根据触发时间或手动选择确定股票组
+          GROUP_ARG=""
+          case "$MODE" in
+            group1)
+              STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"
+              if [ -n "$STOCK_LIST" ]; then
+                export STOCK_LIST="$STOCK_LIST"
+                echo "📦 使用第1组股票: $STOCK_LIST"
+              else
+                echo "⚠️ 第1组股票未配置 (STOCK_LIST_1)，使用默认列表"
+              fi
+              ;;
+            group2)
+              STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"
+              if [ -n "$STOCK_LIST" ]; then
+                export STOCK_LIST="$STOCK_LIST"
+                echo "📦 使用第2组股票: $STOCK_LIST"
+              else
+                echo "⚠️ 第2组股票未配置 (STOCK_LIST_2)，使用默认列表"
+              fi
+              ;;
+            group3)
+              STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"
+              if [ -n "$STOCK_LIST" ]; then
+                export STOCK_LIST="$STOCK_LIST"
+                echo "📦 使用第3组股票: $STOCK_LIST"
+              else
+                echo "⚠️ 第3组股票未配置 (STOCK_LIST_3)，使用默认列表"
+              fi
+              ;;
+            full)
+              # 根据定时任务时间自动选择组
+              CURRENT_HOUR=$(date +%H)
+              echo "⏰ 当前UTC时间: $(date -u +%H:%M)"
+              if [ "$CURRENT_HOUR" = "10" ]; then
+                CURRENT_MIN=$(date +%M)
+                if [ "$CURRENT_MIN" = "0" ]; then
+                  STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"
+                  if [ -n "$STOCK_LIST" ]; then
+                    export STOCK_LIST="$STOCK_LIST"
+                    echo "📦 自动选择第1组股票 (18:00): $STOCK_LIST"
+                  fi
+                elif [ "$CURRENT_MIN" = "15" ]; then
+                  STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"
+                  if [ -n "$STOCK_LIST" ]; then
+                    export STOCK_LIST="$STOCK_LIST"
+                    echo "📦 自动选择第2组股票 (18:15): $STOCK_LIST"
+                  fi
+                elif [ "$CURRENT_MIN" = "30" ]; then
+                  STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"
+                  if [ -n "$STOCK_LIST" ]; then
+                    export STOCK_LIST="$STOCK_LIST"
+                    echo "📦 自动选择第3组股票 (18:30): $STOCK_LIST"
+                  fi
+                else
+                  echo "📦 非定时时间点，使用默认股票列表"
+                fi
+              else
+                echo "📦 非定时时间点，使用默认股票列表"
+              fi
+              ;;
+          esac
 
           # 执行分析
           if [ "$MODE" = "market-only" ]; then
