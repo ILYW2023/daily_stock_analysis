@@ -1,11 +1,15 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 多个时间点分组推送
+  # 定时触发 - 多个时间点分组推送（北京时区 8:45-8:57，每2分钟一组）
   schedule:
-    - cron: '0 10 * * 1-5'     # 北京时间 18:00 - 第1组股票
-    - cron: '15 10 * * 1-5'    # 北京时间 18:15 - 第2组股票
-    - cron: '30 10 * * 1-5'    # 北京时间 18:30 - 第3组股票（可选）
+    - cron: '45 0 * * 1-5'     # 北京时间 8:45 - 第1组股票
+    - cron: '47 0 * * 1-5'     # 北京时间 8:47 - 第2组股票
+    - cron: '49 0 * * 1-5'     # 北京时间 8:49 - 第3组股票
+    - cron: '51 0 * * 1-5'     # 北京时间 8:51 - 第4组股票
+    - cron: '53 0 * * 1-5'     # 北京时间 8:53 - 第5组股票
+    - cron: '55 0 * * 1-5'     # 北京时间 8:55 - 第6组股票
+    - cron: '57 0 * * 1-5'     # 北京时间 8:57 - 第7组股票
   
   # 手动触发
   workflow_dispatch:
@@ -20,6 +24,10 @@ on:
           - group1        # 仅第1组股票
           - group2        # 仅第2组股票
           - group3        # 仅第3组股票
+          - group4        # 仅第4组股票
+          - group5        # 仅第5组股票
+          - group6        # 仅第6组股票
+          - group7        # 仅第7组股票
           - market-only   # 仅大盘复盘
           - stocks-only   # 仅股票分析
       force_run:
@@ -258,67 +266,59 @@ jobs:
           fi
 
           # 根据触发时间或手动选择确定股票组
-          GROUP_ARG=""
-          case "$MODE" in
-            group1)
-              STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"
-              if [ -n "$STOCK_LIST" ]; then
-                export STOCK_LIST="$STOCK_LIST"
-                echo "📦 使用第1组股票: $STOCK_LIST"
-              else
-                echo "⚠️ 第1组股票未配置 (STOCK_LIST_1)，使用默认列表"
-              fi
-              ;;
-            group2)
-              STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"
-              if [ -n "$STOCK_LIST" ]; then
-                export STOCK_LIST="$STOCK_LIST"
-                echo "📦 使用第2组股票: $STOCK_LIST"
-              else
-                echo "⚠️ 第2组股票未配置 (STOCK_LIST_2)，使用默认列表"
-              fi
-              ;;
-            group3)
-              STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"
-              if [ -n "$STOCK_LIST" ]; then
-                export STOCK_LIST="$STOCK_LIST"
-                echo "📦 使用第3组股票: $STOCK_LIST"
-              else
-                echo "⚠️ 第3组股票未配置 (STOCK_LIST_3)，使用默认列表"
-              fi
-              ;;
-            full)
-              # 根据定时任务时间自动选择组
-              CURRENT_HOUR=$(date +%H)
-              echo "⏰ 当前UTC时间: $(date -u +%H:%M)"
-              if [ "$CURRENT_HOUR" = "10" ]; then
-                CURRENT_MIN=$(date +%M)
-                if [ "$CURRENT_MIN" = "0" ]; then
-                  STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"
-                  if [ -n "$STOCK_LIST" ]; then
-                    export STOCK_LIST="$STOCK_LIST"
-                    echo "📦 自动选择第1组股票 (18:00): $STOCK_LIST"
-                  fi
-                elif [ "$CURRENT_MIN" = "15" ]; then
-                  STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"
-                  if [ -n "$STOCK_LIST" ]; then
-                    export STOCK_LIST="$STOCK_LIST"
-                    echo "📦 自动选择第2组股票 (18:15): $STOCK_LIST"
-                  fi
-                elif [ "$CURRENT_MIN" = "30" ]; then
-                  STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"
-                  if [ -n "$STOCK_LIST" ]; then
-                    export STOCK_LIST="$STOCK_LIST"
-                    echo "📦 自动选择第3组股票 (18:30): $STOCK_LIST"
-                  fi
-                else
-                  echo "📦 非定时时间点，使用默认股票列表"
-                fi
-              else
-                echo "📦 非定时时间点，使用默认股票列表"
-              fi
-              ;;
-          esac
+          # 自动选择规则：北京时区 8:45-8:57，每2分钟一组
+          if [ "$MODE" = "full" ]; then
+            CURRENT_HOUR=$(date -u +%H)
+            CURRENT_MIN=$(date -u +%M)
+            echo "⏰ 当前UTC时间: ${CURRENT_HOUR}:${CURRENT_MIN} (北京时间: $((10#$CURRENT_HOUR+8)):${CURRENT_MIN})"
+            
+            if [ "$CURRENT_HOUR" = "0" ]; then
+              case "$CURRENT_MIN" in
+                45) STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"; echo "📦 自动选择第1组股票 (8:45)" ;;
+                47) STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"; echo "📦 自动选择第2组股票 (8:47)" ;;
+                49) STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"; echo "📦 自动选择第3组股票 (8:49)" ;;
+                51) STOCK_LIST="${{ secrets.STOCK_LIST_4 || vars.STOCK_LIST_4 }}"; echo "📦 自动选择第4组股票 (8:51)" ;;
+                53) STOCK_LIST="${{ secrets.STOCK_LIST_5 || vars.STOCK_LIST_5 }}"; echo "📦 自动选择第5组股票 (8:53)" ;;
+                55) STOCK_LIST="${{ secrets.STOCK_LIST_6 || vars.STOCK_LIST_6 }}"; echo "📦 自动选择第6组股票 (8:55)" ;;
+                57) STOCK_LIST="${{ secrets.STOCK_LIST_7 || vars.STOCK_LIST_7 }}"; echo "📦 自动选择第7组股票 (8:57)" ;;
+                *) echo "📦 非分组时间点，使用默认股票列表" ;;
+              esac
+            else
+              echo "📦 非定时分组时间，使用默认股票列表"
+            fi
+            
+            if [ -n "$STOCK_LIST" ]; then
+              export STOCK_LIST="$STOCK_LIST"
+            fi
+          elif [ "$MODE" = "group1" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第1组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group2" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_2 || vars.STOCK_LIST_2 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第2组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group3" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_3 || vars.STOCK_LIST_3 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第3组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group4" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_4 || vars.STOCK_LIST_4 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第4组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group5" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_5 || vars.STOCK_LIST_5 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第5组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group6" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_6 || vars.STOCK_LIST_6 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第6组股票: $STOCK_LIST"
+          elif [ "$MODE" = "group7" ]; then
+            STOCK_LIST="${{ secrets.STOCK_LIST_7 || vars.STOCK_LIST_7 }}"
+            [ -n "$STOCK_LIST" ] && export STOCK_LIST="$STOCK_LIST" && echo "📦 使用第7组股票: $STOCK_LIST"
+          fi
+
+          # 构建强制运行参数
+          FORCE_RUN_ARG=""
+          if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
+            FORCE_RUN_ARG="--force-run"
+            echo "⚡ 已启用强制运行模式（跳过交易日检查）"
+          fi
 
           # 执行分析
           if [ "$MODE" = "market-only" ]; then
