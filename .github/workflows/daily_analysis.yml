@@ -171,7 +171,7 @@ jobs:
           # ==========================================
           # 自选股配置
           # ==========================================
-          STOCK_LIST: ${{ secrets.STOCK_LIST_1 || vars.STOCK_LIST_1 || '' }}
+          STOCK_LIST: ''
           MARKET_REVIEW_REGION: ${{ vars.MARKET_REVIEW_REGION || secrets.MARKET_REVIEW_REGION || 'cn' }}
           
           # ==========================================
